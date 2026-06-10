@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿En qué posición jugás? — Umbral Capital Humano</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+  .wrap { max-width: 580px; width: 100%; }
+  .header { text-align: center; margin-bottom: 2rem; }
+  .logo { font-size: 13px; font-weight: 600; color: #888; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.5rem; }
+  .header h1 { font-size: 26px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; line-height: 1.3; }
+  .header p { font-size: 15px; color: #666; }
+  .card { background: #fff; border-radius: 16px; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .progress-bar { height: 4px; background: #eee; border-radius: 2px; margin-bottom: 1.5rem; }
+  .progress-fill { height: 100%; background: #1a1a1a; border-radius: 2px; transition: width 0.3s; }
+  .q-num { font-size: 13px; color: #999; margin-bottom: 6px; }
+  .q-text { font-size: 18px; font-weight: 500; color: #1a1a1a; margin-bottom: 1.5rem; line-height: 1.4; }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt-btn { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 14px 18px; text-align: left; cursor: pointer; font-size: 15px; color: #1a1a1a; transition: all 0.15s; line-height: 1.4; font-family: inherit; }
+  .opt-btn:hover { background: #f9f9f7; border-color: #ccc; }
+  .opt-btn.selected { background: #f0f0ee; border-color: #1a1a1a; }
+  .result-emoji { font-size: 52px; text-align: center; margin-bottom: 1rem; }
+  .result-pos { font-size: 24px; font-weight: 600; color: #1a1a1a; text-align: center; margin-bottom: 8px; }
+  .result-desc { font-size: 15px; color: #444; line-height: 1.6; text-align: center; margin-bottom: 1.25rem; }
+  .result-talent { font-size: 14px; color: #555; background: #f5f5f3; border-radius: 10px; padding: 14px 16px; margin-bottom: 1.5rem; line-height: 1.6; }
+  .result-talent strong { color: #1a1a1a; }
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px 22px; cursor: pointer; font-size: 14px; color: #1a1a1a; font-family: inherit; transition: all 0.15s; }
+  .btn:hover { background: #f5f5f3; }
+  .btn.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .btn.primary:hover { background: #333; }
+  .footer { text-align: center; margin-top: 1.5rem; font-size: 12px; color: #aaa; }
+  .footer a { color: #888; text-decoration: none; }
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">Umbral Capital Humano</div>
+    <h1>Mundial 2026 — ¿En qué posición jugás?</h1>
+    <p>Descubrí tu rol en el equipo según tu perfil profesional</p>
+  </div>
+
+  <div class="card" id="quiz-card">
+    <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+    <div class="q-num" id="q-num">Pregunta 1 de 5</div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options"></div>
+  </div>
+
+  <div class="card" id="result-card" style="display:none">
+    <div class="result-emoji" id="r-emoji"></div>
+    <div class="result-pos" id="r-pos"></div>
+    <div class="result-desc" id="r-desc"></div>
+    <div class="result-talent" id="r-talent"></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="shareResult()">Copiar y compartir</button>
+      <button class="btn" onclick="restart()">Volver a jugar</button>
+    </div>
+  </div>
+
+  <div class="footer">Un test de <a href="https://umbralcapitalhumano.na.teamtailor.com/" target="_blank">Umbral Capital Humano</a> — impulsamos decisiones de talento que cambian vidas y negocios.</div>
+</div>
+
+<div class="toast" id="toast">Resultado copiado. Pegalo donde quieras compartirlo.</div>
+
+<script>
+const questions = [
+  {
+    text: "Cuando hay un problema en el equipo, ¿qué hacés primero?",
+    options: [
+      { text: "Me pongo adelante y busco la solución yo mismo", scores: { delantero: 3, dt: 1 } },
+      { text: "Analizo bien la situación antes de actuar", scores: { cuerpo: 3, dt: 2 } },
+      { text: "Conecto a las personas indicadas para resolverlo", scores: { mediocampista: 3 } },
+      { text: "Me aseguro de que nadie más se vea afectado", scores: { arquero: 2, defensor: 3 } },
+      { text: "Observo, aprendo y espero mi momento para aportar", scores: { suplente: 3 } }
+    ]
+  },
+  {
+    text: "¿Cómo preferís trabajar?",
+    options: [
+      { text: "Con visibilidad, liderando y tomando decisiones", scores: { dt: 3, delantero: 1 } },
+      { text: "En el centro de todo, conectando personas y procesos", scores: { mediocampista: 3 } },
+      { text: "Cuidando que las bases estén firmes y nada falle", scores: { defensor: 3, arquero: 1 } },
+      { text: "Detrás de escena, haciendo que el equipo funcione", scores: { cuerpo: 3 } },
+      { text: "Enfocado en resultados concretos y tangibles", scores: { delantero: 3 } }
+    ]
+  },
+  {
+    text: "¿Cómo reaccionás cuando algo sale mal?",
+    options: [
+      { text: "Me hago cargo y busco el gol de revancha", scores: { delantero: 3 } },
+      { text: "Analizo qué salió mal y ajusto la estrategia", scores: { dt: 3, cuerpo: 1 } },
+      { text: "Me aseguro de que no vuelva a pasar — prevengo", scores: { arquero: 3, defensor: 1 } },
+      { text: "Apoyo al equipo para que recupere la confianza", scores: { mediocampista: 2, suplente: 2 } },
+      { text: "Documento, aprendo y mejoro para la próxima", scores: { cuerpo: 3 } }
+    ]
+  },
+  {
+    text: "¿Qué rol tomás naturalmente en un equipo nuevo?",
+    options: [
+      { text: "El que propone, impulsa y genera movimiento", scores: { delantero: 3, dt: 1 } },
+      { text: "El que escucha, conecta y hace fluir al grupo", scores: { mediocampista: 3 } },
+      { text: "El que cuida que todo esté en orden y sin riesgos", scores: { defensor: 3 } },
+      { text: "El que observa, aprende y espera el momento justo", scores: { suplente: 3, arquero: 1 } },
+      { text: "El que organiza, planifica y sostiene desde atrás", scores: { cuerpo: 3, dt: 1 } }
+    ]
+  },
+  {
+    text: "¿Qué te define mejor como profesional?",
+    options: [
+      { text: "Mis resultados — el marcador no miente", scores: { delantero: 3 } },
+      { text: "Mi visión — veo el partido antes de que pase", scores: { dt: 3 } },
+      { text: "Mi resiliencia — soy el último en rendirse", scores: { arquero: 3 } },
+      { text: "Mi red — conozco a todos y conecto lo que hace falta", scores: { mediocampista: 3 } },
+      { text: "Mi potencial — todavía no mostré todo lo que tengo", scores: { suplente: 3 } }
+    ]
+  }
+];
+
+const positions = {
+  delantero: {
+    emoji: "⚡",
+    name: "Delantero/a",
+    desc: "Vas por el gol. Siempre. Sos la persona que impulsa resultados, busca el protagonismo y no se conforma con empatar. Tu energía moviliza al equipo.",
+    talent: "<strong>En el mundo del talento</strong> sos el perfil que las empresas necesitan cuando quieren crecer. Orientado/a a resultados, con iniciativa y hambre de logro. El desafío: aprender a celebrar también los goles del equipo."
+  },
+  mediocampista: {
+    emoji: "⚙️",
+    name: "Mediocampista",
+    desc: "Todo pasa por vos. Conectás, organizás, hacés fluir. Sos el cerebro del equipo — a veces invisible, pero sin vos nada funciona.",
+    talent: "<strong>En el mundo del talento</strong> sos el perfil que sostiene culturas y equipos. Relacionamiento, comunicación y visión de conjunto. Las organizaciones que te valoran saben que sos su activo más estratégico."
+  },
+  arquero: {
+    emoji: "🥅",
+    name: "Arquero/a",
+    desc: "Sos la última línea de defensa. Anticipás, contenés y salvás al equipo cuando todo falla. Tu presencia da tranquilidad a todos.",
+    talent: "<strong>En el mundo del talento</strong> sos el perfil que cuida los procesos, gestiona riesgos y da seguridad a las organizaciones. Riguroso/a, confiable y con temple en los momentos críticos."
+  },
+  defensor: {
+    emoji: "🛡️",
+    name: "Defensor/a",
+    desc: "Primero cuidás lo que ya tienen. Sos sólido/a, estructurado/a y confiable. El equipo sabe que con vos atrás, las bases están firmes.",
+    talent: "<strong>En el mundo del talento</strong> sos el perfil que da estabilidad a los equipos. Cuidás la cultura, los procesos y las personas. Las organizaciones maduras te buscan cuando quieren sostenibilidad."
+  },
+  dt: {
+    emoji: "🎯",
+    name: "Director/a Técnico/a",
+    desc: "Ves el partido completo. Tomás decisiones, liderás desde la visión y hacés que cada persona del equipo dé lo mejor. El resultado es tuyo — tanto el triunfo como la derrota.",
+    talent: "<strong>En el mundo del talento</strong> sos el perfil de liderazgo estratégico. Visión, toma de decisiones y capacidad de desarrollar a otros. Las organizaciones que quieren transformarse te necesitan."
+  },
+  cuerpo: {
+    emoji: "🧪",
+    name: "Cuerpo Técnico",
+    desc: "Trabajás detrás de escena y hacés posible que todo funcione. Sin vos, el equipo no llega al partido. Tu valor está en los detalles que nadie ve pero todos necesitan.",
+    talent: "<strong>En el mundo del talento</strong> sos el perfil que sostiene operaciones y hace que los proyectos se ejecuten. Metódico/a, riguroso/a y orientado/a al proceso. Imprescindible aunque poco visible."
+  },
+  suplente: {
+    emoji: "🪑",
+    name: "Suplente con potencial",
+    desc: "Todavía no mostraste todo lo que tenés. Observás, aprendés y esperás tu momento. Cuando entrés, el equipo va a notar la diferencia.",
+    talent: "<strong>En el mundo del talento</strong> sos el perfil con alto potencial de desarrollo. Quizás en un proceso de transición o crecimiento. La pregunta es: ¿cuándo vas a decidir entrar a la cancha?"
+  }
+};
+
+let current = 0;
+let scores = { delantero:0, mediocampista:0, arquero:0, defensor:0, dt:0, cuerpo:0, suplente:0 };
+let resultPosition = "";
+
+function renderQuestion() {
+  const q = questions[current];
+  document.getElementById("q-num").textContent = "Pregunta " + (current+1) + " de " + questions.length;
+  document.getElementById("q-text").textContent = q.text;
+  document.getElementById("progress").style.width = ((current / questions.length) * 100) + "%";
+  const opts = document.getElementById("options");
+  opts.innerHTML = "";
+  q.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "opt-btn";
+    btn.textContent = opt.text;
+    btn.onclick = () => select(opt.scores, btn);
+    opts.appendChild(btn);
+  });
+}
+
+function select(optScores, btn) {
+  document.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  Object.keys(optScores).forEach(k => { scores[k] += optScores[k]; });
+  setTimeout(() => {
+    current++;
+    if (current < questions.length) { renderQuestion(); }
+    else { showResult(); }
+  }, 300);
+}
+
+function showResult() {
+  const winner = Object.keys(scores).reduce((a,b) => scores[a] >= scores[b] ? a : b);
+  resultPosition = winner;
+  const pos = positions[winner];
+  document.getElementById("r-emoji").textContent = pos.emoji;
+  document.getElementById("r-pos").textContent = pos.name;
+  document.getElementById("r-desc").textContent = pos.desc;
+  document.getElementById("r-talent").innerHTML = pos.talent;
+  document.getElementById("progress").style.width = "100%";
+  document.getElementById("quiz-card").style.display = "none";
+  document.getElementById("result-card").style.display = "block";
+}
+
+function restart() {
+  current = 0;
+  scores = { delantero:0, mediocampista:0, arquero:0, defensor:0, dt:0, cuerpo:0, suplente:0 };
+  document.getElementById("quiz-card").style.display = "block";
+  document.getElementById("result-card").style.display = "none";
+  renderQuestion();
+}
+
+function shareResult() {
+  const pos = positions[resultPosition];
+  const text = "Hice el test de Umbral Capital Humano y soy " + pos.name + " " + pos.emoji + "\n¿Y vos? Descubrí tu posición en umbralcapitalhumano.na.teamtailor.com";
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      const t = document.getElementById("toast");
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 3000);
+    });
+  }
+}
+
+renderQuestion();
+</script>
+</body>
+</html>
